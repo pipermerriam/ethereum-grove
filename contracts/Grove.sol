@@ -6,20 +6,25 @@ contract Grove {
                 bytes32 nodeId;
                 bytes32 indexId;
                 bytes32 id;
-                uint value;
+                int value;
                 bytes32 parent;
                 bytes32 left;
                 bytes32 right;
                 uint height;
         }
 
-        bytes32 public rootNodeID;
-
         // Maps an index id to the id of it's root node.
         mapping (bytes32 => bytes32) index_to_root;
 
         // Maps node_id to Node
         mapping (bytes32 => Node) node_lookup;
+
+        // Map index_id to index Name
+        mapping (bytes32 => bytes32) index_lookup;
+
+        function getIndexId(address owner, bytes32 indexName) constant returns (bytes32) {
+                return sha3(owner, indexName);
+        }
 
         function getNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
                 return sha3(indexId, id);
@@ -35,6 +40,10 @@ contract Grove {
         /*
          *  Node getters
          */
+        function getIndexName(bytes32 indexId) constant returns (bytes32) {
+            return index_lookup[indexId];
+        }
+
         function getIndexRoot(bytes32 indexId) constant returns (bytes32) {
             return index_to_root[indexId];
         }
@@ -47,7 +56,7 @@ contract Grove {
             return node_lookup[nodeId].indexId;
         }
 
-        function getNodeValue(bytes32 nodeId) constant returns (uint) {
+        function getNodeValue(bytes32 nodeId) constant returns (int) {
             return node_lookup[nodeId].value;
         }
 
@@ -67,13 +76,26 @@ contract Grove {
             return node_lookup[nodeId].right;
         }
 
-        function insert(bytes32 indexId, bytes32 id, uint value) public {
+        function insert(bytes32 indexName, bytes32 id, int value) public {
+                bytes32 indexId = getIndexId(msg.sender, indexName);
+                if (index_lookup[indexId] == 0x0) {
+                    index_lookup[indexId] = indexName;
+                }
+                bytes32 nodeId = getNodeId(indexId, id);
+
+                if (node_lookup[nodeId].id == id) {
+                    // A node with this id already exists.
+                    //
+                    // TODO: When deletion is supported, we can delete the
+                    // current node and then re-insert it.
+                    return;
+                }
+
                 int balanceFactor;
                 uint leftHeight;
                 uint rightHeight;
 
                 bytes32 previousNodeId = 0x0;
-                bytes32 nodeId = getNodeId(indexId, id);
 
                 bytes32 rootNodeId = index_to_root[indexId];
 
@@ -114,7 +136,8 @@ contract Grove {
                     currentNode = node_lookup[currentNode.left];
                 }
 
-                // Trace back up rebalancing.
+                // Trace back up rebalancing the tree and updating heights as
+                // needed..
                 while (true) {
                     balanceFactor = _getBalanceFactor(currentNode.nodeId);
 
@@ -151,6 +174,138 @@ contract Grove {
                     }
 
                     currentNode = node_lookup[currentNode.parent];
+                }
+        }
+
+        bytes2 constant GT = ">";
+        bytes2 constant LT = "<";
+        bytes2 constant GTE = ">=";
+        bytes2 constant LTE = "<=";
+        bytes2 constant EQ = "==";
+
+        function _compare(int left, bytes2 operator, int right) internal returns (bool) {
+            if (operator == GT) {
+                return (left > right);
+            }
+            if (operator == LT) {
+                return (left < right);
+            }
+            if (operator == GTE) {
+                return (left >= right);
+            }
+            if (operator == LTE) {
+                return (left <= right);
+            }
+            if (operator == EQ) {
+                return (left == right);
+            }
+
+            // Invalid operator.
+            __throw();
+        }
+
+        function _getMaximum(bytes32 nodeId) internal returns (int) {
+                var currentNode = node_lookup[nodeId];
+
+                while (true) {
+                    if (currentNode.right == 0x0) {
+                        return currentNode.value;
+                    }
+                    currentNode = node_lookup[currentNode.right];
+                }
+        }
+
+        function _getMinimum(bytes32 nodeId) internal returns (int) {
+                var currentNode = node_lookup[nodeId];
+
+                while (true) {
+                    if (currentNode.left == 0x0) {
+                        return currentNode.value;
+                    }
+                    currentNode = node_lookup[currentNode.left];
+                }
+        }
+
+        function query(bytes32 indexId, bytes2 operator, int value) public returns (bytes32) {
+                bytes32 rootNodeId = index_to_root[indexId];
+                
+                if (rootNodeId == 0x0) {
+                    // Empty tree.
+                    return 0x0;
+                }
+
+                var currentNode = node_lookup[rootNodeId];
+
+                while (true) {
+                    if (_compare(currentNode.value, operator, value)) {
+                        // We have found a match but it might not be the
+                        // *correct* match.
+                        if ((operator == LT) || (operator == LTE)) {
+                            // Need to keep traversing right until this is no
+                            // longer true.
+                            if (currentNode.right == 0x0) {
+                                return currentNode.nodeId;
+                            }
+                            if (_compare(_getMinimum(currentNode.right), operator, value)) {
+                                // There are still nodes to the right that
+                                // match.
+                                currentNode = node_lookup[currentNode.right];
+                                continue;
+                            }
+                            return currentNode.nodeId;
+                        }
+
+                        if ((operator == GT) || (operator == GTE) || (operator == EQ)) {
+                            // Need to keep traversing left until this is no
+                            // longer true.
+                            if (currentNode.left == 0x0) {
+                                return currentNode.nodeId;
+                            }
+                            if (_compare(_getMaximum(currentNode.left), operator, value)) {
+                                currentNode = node_lookup[currentNode.left];
+                                continue;
+                            }
+                            return currentNode.nodeId;
+                        }
+                    }
+
+                    if ((operator == LT) || (operator == LTE)) {
+                        if (currentNode.left == 0x0) {
+                            // There are no nodes that are less than the value
+                            // so return null.
+                            return 0x0;
+                        }
+                        currentNode = node_lookup[currentNode.left];
+                        continue;
+                    }
+
+                    if ((operator == GT) || (operator == GTE)) {
+                        if (currentNode.right == 0x0) {
+                            // There are no nodes that are greater than the value
+                            // so return null.
+                            return 0x0;
+                        }
+                        currentNode = node_lookup[currentNode.right];
+                        continue;
+                    }
+
+                    if (operator == EQ) {
+                        if (currentNode.value < value) {
+                            if (currentNode.right == 0x0) {
+                                return 0x0;
+                            }
+                            currentNode = node_lookup[currentNode.right];
+                            continue;
+                        }
+
+                        if (currentNode.value > value) {
+                            if (currentNode.left == 0x0) {
+                                return 0x0;
+                            }
+                            currentNode = node_lookup[currentNode.left];
+                            continue;
+                        }
+                    }
                 }
         }
 
@@ -269,7 +424,7 @@ contract Grove {
             _updateNodeHeight(newRoot.nodeId);
         }
 
-        function __throw() {
+        function __throw() internal {
             int[] x;
             x[1];
         }
