@@ -21,7 +21,7 @@ contract Grove {
         // Maps node_id to Node
         mapping (bytes32 => Node) node_lookup;
 
-        function getNodeId(bytes32 indexId, bytes32 id) public returns (bytes32) {
+        function getNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
                 return sha3(indexId, id);
         }
 
@@ -35,31 +35,35 @@ contract Grove {
         /*
          *  Node getters
          */
-        function getNodeId(bytes32 nodeId) public returns (bytes32) {
+        function getIndexRoot(bytes32 indexId) constant returns (bytes32) {
+            return index_to_root[indexId];
+        }
+
+        function getNodeId(bytes32 nodeId) constant returns (bytes32) {
             return node_lookup[nodeId].id;
         }
 
-        function getNodeIndexId(bytes32 nodeId) public returns (bytes32) {
+        function getNodeIndexId(bytes32 nodeId) constant returns (bytes32) {
             return node_lookup[nodeId].indexId;
         }
 
-        function getNodeValue(bytes32 nodeId) public returns (uint) {
+        function getNodeValue(bytes32 nodeId) constant returns (uint) {
             return node_lookup[nodeId].value;
         }
 
-        function getNodeHeight(bytes32 nodeId) public returns (uint) {
+        function getNodeHeight(bytes32 nodeId) constant returns (uint) {
             return node_lookup[nodeId].height;
         }
 
-        function getNodeParent(bytes32 nodeId) public returns (bytes32) {
+        function getNodeParent(bytes32 nodeId) constant returns (bytes32) {
             return node_lookup[nodeId].parent;
         }
 
-        function getNodeLeftChild(bytes32 nodeId) public returns (bytes32) {
+        function getNodeLeftChild(bytes32 nodeId) constant returns (bytes32) {
             return node_lookup[nodeId].left;
         }
 
-        function getNodeRightChild(bytes32 nodeId) public returns (bytes32) {
+        function getNodeRightChild(bytes32 nodeId) constant returns (bytes32) {
             return node_lookup[nodeId].right;
         }
 
@@ -70,7 +74,14 @@ contract Grove {
 
                 bytes32 previousNodeId = 0x0;
                 bytes32 nodeId = getNodeId(indexId, id);
-                var currentNode = node_lookup[index_to_root[indexId]];
+
+                bytes32 rootNodeId = index_to_root[indexId];
+
+                if (rootNodeId == 0x0) {
+                    rootNodeId = nodeId;
+                    index_to_root[indexId] = nodeId;
+                }
+                var currentNode = node_lookup[rootNodeId];
 
                 // Do insertion
                 while (true) {
@@ -134,7 +145,8 @@ contract Grove {
                     }
 
                     if (currentNode.parent == 0x0) {
-                        // Reached the root so break.
+                        // Reached the root which may be new due to tree
+                        // rotation, so set it as the root and then break.
                         break;
                     }
 
@@ -155,58 +167,63 @@ contract Grove {
         }
 
         function _rotateLeft(bytes32 nodeId) internal {
-            var node = node_lookup[nodeId];
+            var originalRoot = node_lookup[nodeId];
 
-            if (node.right == 0x0) {
-                // Cannot rotate left if there is no right node to rotate into
+            if (originalRoot.right == 0x0) {
+                // Cannot rotate left if there is no right originalRoot to rotate into
                 // place.
                 __throw();
             }
 
             // The right child is the new root, so it gets the original
-            // `node.parent` as it's parent.
-            var rightChild = node_lookup[node.right];
-            rightChild.parent = node.parent;
+            // `originalRoot.parent` as it's parent.
+            var newRoot = node_lookup[originalRoot.right];
+            newRoot.parent = originalRoot.parent;
 
-            if (node.parent != 0x0) {
+            // The original root needs to have it's right child nulled out.
+            originalRoot.right = 0x0;
+
+            if (originalRoot.parent != 0x0) {
                 // If there is a parent node, it needs to now point downward at
-                // the rightChild which is rotating into the place where `node` was.
-                var parent = node_lookup[node.parent];
+                // the newRoot which is rotating into the place where `node` was.
+                var parent = node_lookup[originalRoot.parent];
 
                 // figure out if we're a left or right child and have the
                 // parent point to the new node.
-                if (parent.left == node.nodeId) {
-                    parent.left = rightChild.nodeId;
+                if (parent.left == originalRoot.nodeId) {
+                    parent.left = newRoot.nodeId;
                 }
-                if (parent.right == node.nodeId) {
-                    parent.right = rightChild.nodeId;
+                if (parent.right == originalRoot.nodeId) {
+                    parent.right = newRoot.nodeId;
                 }
             }
 
 
-            if (rightChild.left != 0) {
-                // If the right child had a left child, that moves to the
-                // location that the right child used to be on the original
-                // node.
-                var leftChild = node_lookup[rightChild.left];
-                node.right = rightChild.left;
-                leftChild.parent = node.nodeId;
-                _updateNodeHeight(leftChild.nodeId);
+            if (newRoot.left != 0) {
+                // If the new root had a left child, that moves to be the
+                // new right child of the original root node
+                var leftChild = node_lookup[newRoot.left];
+                originalRoot.right = leftChild.nodeId;
+                leftChild.parent = originalRoot.nodeId;
             }
 
-            // Update the rightChild's left node to point at the original node.
-            node.parent = rightChild.nodeId;
-            rightChild.left = node.nodeId;
+            // Update the newRoot's left node to point at the original node.
+            originalRoot.parent = newRoot.nodeId;
+            newRoot.left = originalRoot.nodeId;
+
+            if (newRoot.parent == 0x0) {
+                index_to_root[newRoot.indexId] = newRoot.nodeId;
+            }
 
             // TODO: are both of these updates necessary?
-            _updateNodeHeight(node.nodeId);
-            _updateNodeHeight(rightChild.nodeId);
+            _updateNodeHeight(originalRoot.nodeId);
+            _updateNodeHeight(newRoot.nodeId);
         }
 
         function _rotateRight(bytes32 nodeId) internal {
-            var node = node_lookup[nodeId];
+            var originalRoot = node_lookup[nodeId];
 
-            if (node.left == 0x0) {
+            if (originalRoot.left == 0x0) {
                 // Cannot rotate right if there is no left node to rotate into
                 // place.
                 __throw();
@@ -214,35 +231,42 @@ contract Grove {
 
             // The left child is taking the place of node, so we update it's
             // parent to be the original parent of the node.
-            var leftChild = node_lookup[node.left];
-            leftChild.parent = node.parent;
+            var newRoot = node_lookup[originalRoot.left];
+            newRoot.parent = originalRoot.parent;
 
-            if (node.parent != 0x0) {
+            // Null out the originalRoot.left
+            originalRoot.left = 0x0;
+
+            if (originalRoot.parent != 0x0) {
                 // If the node has a parent, update the correct child to point
-                // at the leftChild now.
-                var parent = node_lookup[node.parent];
+                // at the newRoot now.
+                var parent = node_lookup[originalRoot.parent];
 
-                if (parent.left == node.nodeId) {
-                    parent.left = leftChild.nodeId;
+                if (parent.left == originalRoot.nodeId) {
+                    parent.left = newRoot.nodeId;
                 }
-                if (parent.right == node.nodeId) {
-                    parent.right = leftChild.nodeId;
+                if (parent.right == originalRoot.nodeId) {
+                    parent.right = newRoot.nodeId;
                 }
             }
 
-            if (leftChild.right != 0x0) {
-                var rightChild = node_lookup[leftChild.right];
-                node.left = leftChild.right;
-                rightChild.parent = node.nodeId;
-                _updateNodeHeight(rightChild.nodeId);
+            if (newRoot.right != 0x0) {
+                var rightChild = node_lookup[newRoot.right];
+                originalRoot.left = newRoot.right;
+                rightChild.parent = originalRoot.nodeId;
             }
 
-            node.parent = leftChild.nodeId;
-            leftChild.right = node.nodeId;
+            // Update the new root's right node to point to the original node.
+            originalRoot.parent = newRoot.nodeId;
+            newRoot.right = originalRoot.nodeId;
 
-            // TODO: are both of these updates necessary?
-            _updateNodeHeight(node.nodeId);
-            _updateNodeHeight(leftChild.nodeId);
+            if (newRoot.parent == 0x0) {
+                index_to_root[newRoot.indexId] = newRoot.nodeId;
+            }
+
+            // Recompute heights.
+            _updateNodeHeight(originalRoot.nodeId);
+            _updateNodeHeight(newRoot.nodeId);
         }
 
         function __throw() {
