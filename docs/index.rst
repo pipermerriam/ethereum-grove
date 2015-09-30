@@ -12,6 +12,8 @@ ordered data in a fast manner.
 The current implementation uses an AVL tree for storage which has on average
 ``O(log n)`` time complexity for inserts and lookups.
 
+The Grove contract can be accessed at ``0x6b07cb54be50bc040cca0360ec792d7b5609f4db``
+
 
 Indexes
 -------
