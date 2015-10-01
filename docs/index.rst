@@ -18,7 +18,6 @@ the source, it was compiled using version ``0.1.3-1736fe80`` of the ``solc``
 compiler with the ``--optimize`` flag turned on.
 
 
-
 .. toctree::
    intro
    api

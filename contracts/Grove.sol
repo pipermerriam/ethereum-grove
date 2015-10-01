@@ -76,8 +76,18 @@ contract Grove {
             return node_lookup[nodeId].right;
         }
 
+        function getPreviousNode(bytes32 nodeId) constant returns (bytes32) {
+            // TODO
+        }
+
         function getNextNode(bytes32 nodeId) constant returns (bytes32) {
             var currentNode = node_lookup[nodeId];
+
+            if (currentNode.nodeId == 0x0) {
+                // Unknown node, just return 0x0;
+                return 0x0;
+            }
+
             Node child;
 
             if (currentNode.right != 0x0) {
