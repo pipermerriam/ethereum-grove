@@ -77,7 +77,47 @@ contract Grove {
         }
 
         function getPreviousNode(bytes32 nodeId) constant returns (bytes32) {
-            // TODO
+            var currentNode = node_lookup[nodeId];
+
+            if (currentNode.nodeId == 0x0) {
+                // Unknown node, just return 0x0;
+                return 0x0;
+            }
+
+            Node child;
+
+            if (currentNode.left != 0x0) {
+                // Trace left to latest child in left tree.
+                child = node_lookup[currentNode.left];
+
+                while (child.right != 0) {
+                    child = node_lookup[child.right];
+                }
+                return child.nodeId;
+            }
+
+            if (currentNode.parent != 0x0) {
+                // Now we trace back up through parent relationships, looking
+                // for a link where the child is the right child of it's
+                // parent.
+                var parent = node_lookup[currentNode.parent];
+                child = currentNode;
+
+                while (true) {
+                    if (parent.right == child.nodeId) {
+                        return parent.nodeId;
+                    }
+
+                    if (parent.parent == 0x0) {
+                        break;
+                    }
+                    child = parent;
+                    parent = node_lookup[parent.parent];
+                }
+            }
+
+            // This is the first node, and has no previous node.
+            return 0x0;
         }
 
         function getNextNode(bytes32 nodeId) constant returns (bytes32) {
@@ -224,6 +264,35 @@ contract Grove {
 
                     currentNode = node_lookup[currentNode.parent];
                 }
+        }
+
+        function remove(bytes32 indexName, bytes32 id) public {
+            bytes32 indexId = getIndexId(msg.sender, indexName);
+            bytes32 nodeId = getNodeId(indexId, id);
+            
+            Node replacementNode;
+
+            var nodeToDelete = node_lookup[nodeId].id;
+
+            if (nodeToDelete.id != id) {
+                // The id does not exist in the tree.
+                return;
+            }
+
+            if (nodeToDelete.left != 0x0 || nodeToDelete.right != 0x0) {
+                if (nodeToDelete.left != 0x0) {
+                    // This node is guaranteed to not have a right child.
+                    replacementNode = getPreviousNode(nodeToDelete.nodeId);
+                }
+                // TODO
+            }
+            else if (nodeToDelete.right != 0x0) {
+                // This node is guaranteed to not have a left child.
+                replacementNode = getNextNode(nodeToDelete.nodeId);
+            }
+            else {
+                // The node being deleted is a leaf node.
+            }
         }
 
         bytes2 constant GT = ">";

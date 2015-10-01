@@ -70,7 +70,7 @@ def big_tree(deployed_contracts):
         ('j', None),
     )
 )
-def test_tree_querying(big_tree, _id, next_id):
+def test_getting_next_node(big_tree, _id, next_id):
     def get_val(node_id):
         if node_id is None:
             return None
@@ -86,3 +86,52 @@ def test_tree_querying(big_tree, _id, next_id):
         actual_next_id = big_tree.getNodeId(next_node_id)
 
         assert next_id == actual_next_id
+
+
+@pytest.mark.parametrize(
+    '_id,previous_id',
+    (
+        ('b', None),
+        ('r', 'b'),
+        ('s', 'r'),
+        ('f', 's'),
+        ('l', 'f'),
+        ('v', 'l'),
+        ('m', 'v'),
+        ('p', 'm'),
+        ('n', 'p'),
+        ('y', 'n'),
+        ('c', 'y'),
+        ('w', 'c'),
+        ('d', 'w'),
+        ('o', 'd'),
+        ('k', 'o'),
+        ('q', 'k'),
+        ('x', 'q'),
+        ('u', 'x'),
+        ('e', 'u'),
+        ('g', 'e'),
+        ('t', 'g'),
+        ('h', 't'),
+        ('i', 'h'),
+        ('z', 'i'),
+        ('a', 'z'),
+        ('j', 'a'),
+    )
+)
+def test_getting_previous_node(big_tree, _id, previous_id):
+    def get_val(node_id):
+        if node_id is None:
+            return None
+        return big_tree.getNodeValue.call(node_id)
+
+    index_id = big_tree.getIndexId(big_tree._meta.rpc_client.get_coinbase(), "test")
+
+    node_id = big_tree.getNodeId(index_id, _id)
+    previous_node_id = big_tree.getPreviousNode.call(node_id)
+    if previous_id is None:
+        assert previous_node_id is None
+    else:
+        actual_previous_id = big_tree.getNodeId(previous_node_id)
+
+        assert previous_id == actual_previous_id
