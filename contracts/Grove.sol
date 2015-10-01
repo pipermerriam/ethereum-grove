@@ -225,45 +225,13 @@ contract Grove {
                     currentNode = node_lookup[currentNode.left];
                 }
 
-                // Trace back up rebalancing the tree and updating heights as
-                // needed..
-                while (true) {
-                    balanceFactor = _getBalanceFactor(currentNode.nodeId);
+                // Rebalance the tree
+                _rebalanceTree(currentNode.nodeId);
+        }
 
-                    if (balanceFactor == 2) {
-                        // Right rotation (tree is heavy on the left)
-                        if (_getBalanceFactor(currentNode.left) == -1) {
-                            // The subtree is leaning right so it need to be
-                            // rotated left before the current node is rotated
-                            // right.
-                            _rotateLeft(currentNode.left);
-                        }
-                        _rotateRight(currentNode.nodeId);
-                    }
-
-                    if (balanceFactor == -2) {
-                        // Left rotation (tree is heavy on the right)
-                        if (_getBalanceFactor(currentNode.right) == 1) {
-                            // The subtree is leaning left so it need to be
-                            // rotated right before the current node is rotated
-                            // left.
-                            _rotateRight(currentNode.right);
-                        }
-                        _rotateLeft(currentNode.nodeId);
-                    }
-
-                    if ((-1 <= balanceFactor) && (balanceFactor <= 1)) {
-                        _updateNodeHeight(currentNode.nodeId);
-                    }
-
-                    if (currentNode.parent == 0x0) {
-                        // Reached the root which may be new due to tree
-                        // rotation, so set it as the root and then break.
-                        break;
-                    }
-
-                    currentNode = node_lookup[currentNode.parent];
-                }
+        function exists(bytes32 indexId, bytes32 id) constant returns (bool) {
+            bytes32 nodeId = getNodeId(indexId, id);
+            return (node_lookup[nodeId].nodeId == nodeId);
         }
 
         function remove(bytes32 indexName, bytes32 id) public {
@@ -271,8 +239,11 @@ contract Grove {
             bytes32 nodeId = getNodeId(indexId, id);
             
             Node replacementNode;
+            Node parent;
+            Node child;
+            bytes32 rebalanceOrigin;
 
-            var nodeToDelete = node_lookup[nodeId].id;
+            var nodeToDelete = node_lookup[nodeId];
 
             if (nodeToDelete.id != id) {
                 // The id does not exist in the tree.
@@ -280,18 +251,106 @@ contract Grove {
             }
 
             if (nodeToDelete.left != 0x0 || nodeToDelete.right != 0x0) {
+                // This node is not a leaf node and thus must replace itself in
+                // it's tree by either the previous or next node.
                 if (nodeToDelete.left != 0x0) {
                     // This node is guaranteed to not have a right child.
-                    replacementNode = getPreviousNode(nodeToDelete.nodeId);
+                    replacementNode = node_lookup[getPreviousNode(nodeToDelete.nodeId)];
                 }
-                // TODO
+                else {
+                    // This node is guaranteed to not have a left child.
+                    replacementNode = node_lookup[getNextNode(nodeToDelete.nodeId)];
+                }
+                // The replacementNode is guaranteed to have a parent.
+                parent = node_lookup[replacementNode.parent];
+
+                // Keep note of the location that our tree rebalancing should
+                // start at.
+                rebalanceOrigin = replacementNode.nodeId;
+
+                // Join the parent of the replacement node with any subtree of
+                // the replacement node.  We can guarantee that the replacement
+                // node has at most one subtree because of how getNextNode and
+                // getPreviousNode are used.
+                if (parent.left == replacementNode.nodeId) {
+                    parent.left = replacementNode.right;
+                    if (replacementNode.right != 0x0) {
+                        child = node_lookup[replacementNode.right];
+                        child.parent = parent.nodeId;
+                    }
+                }
+                if (parent.right == replacementNode.nodeId) {
+                    parent.right = replacementNode.left;
+                    if (replacementNode.left != 0x0) {
+                        child = node_lookup[replacementNode.left];
+                        child.parent = parent.nodeId;
+                    }
+                }
+
+                // Now we replace the nodeToDelete with the replacementNode.
+                // This includes parent/child relationships for all of the
+                // parent, the left child, and the right child.
+                replacementNode.parent = nodeToDelete.parent;
+                if (nodeToDelete.parent != 0x0) {
+                    parent = node_lookup[nodeToDelete.parent];
+                    if (parent.left == nodeToDelete.nodeId) {
+                        parent.left = replacementNode.nodeId;
+                    }
+                    if (parent.right == nodeToDelete.nodeId) {
+                        parent.right = replacementNode.nodeId;
+                    }
+                }
+                else {
+                    // If the node we are deleting is the root node so update
+                    // the indexId to root node mapping.
+                    index_to_root[indexId] = replacementNode.nodeId;
+                }
+
+                replacementNode.left = nodeToDelete.left;
+                if (nodeToDelete.left != 0x0) {
+                    child = node_lookup[nodeToDelete.left];
+                    child.parent = replacementNode.nodeId;
+                }
+
+                replacementNode.right = nodeToDelete.right;
+                if (nodeToDelete.right != 0x0) {
+                    child = node_lookup[nodeToDelete.right];
+                    child.parent = replacementNode.nodeId;
+                }
             }
-            else if (nodeToDelete.right != 0x0) {
-                // This node is guaranteed to not have a left child.
-                replacementNode = getNextNode(nodeToDelete.nodeId);
+            else if (nodeToDelete.parent != 0x0) {
+                // The node being deleted is a leaf node so we only erase it's
+                // parent linkage.
+                parent = node_lookup[nodeToDelete.parent];
+
+                if (parent.left == nodeToDelete.nodeId) {
+                    parent.left = 0x0;
+                }
+                if (parent.right == nodeToDelete.nodeId) {
+                    parent.right = 0x0;
+                }
+
+                // keep note of where the rebalancing should begin.
+                rebalanceOrigin = parent.nodeId;
             }
             else {
-                // The node being deleted is a leaf node.
+                // This is both a leaf node and the root node, so we need to
+                // unset the root node pointer.
+                index_to_root[indexId] = 0x0;
+            }
+
+            // Now we zero out all of the fields on the nodeToDelete.
+            nodeToDelete.id = 0x0;
+            nodeToDelete.nodeId = 0x0;
+            nodeToDelete.indexId = 0x0;
+            nodeToDelete.value = 0;
+            nodeToDelete.parent = 0x0;
+            nodeToDelete.left = 0x0;
+            nodeToDelete.right = 0x0;
+
+            // Walk back up the tree rebalancing
+            if (rebalanceOrigin != 0x0) {
+                _rebalanceTree(rebalanceOrigin);
             }
         }
 
@@ -425,6 +484,50 @@ contract Grove {
                         }
                     }
                 }
+        }
+
+        function _rebalanceTree(bytes32 nodeId) internal {
+            // Trace back up rebalancing the tree and updating heights as
+            // needed..
+            var currentNode = node_lookup[nodeId];
+
+            while (true) {
+                int balanceFactor = _getBalanceFactor(currentNode.nodeId);
+
+                if (balanceFactor == 2) {
+                    // Right rotation (tree is heavy on the left)
+                    if (_getBalanceFactor(currentNode.left) == -1) {
+                        // The subtree is leaning right so it need to be
+                        // rotated left before the current node is rotated
+                        // right.
+                        _rotateLeft(currentNode.left);
+                    }
+                    _rotateRight(currentNode.nodeId);
+                }
+
+                if (balanceFactor == -2) {
+                    // Left rotation (tree is heavy on the right)
+                    if (_getBalanceFactor(currentNode.right) == 1) {
+                        // The subtree is leaning left so it need to be
+                        // rotated right before the current node is rotated
+                        // left.
+                        _rotateRight(currentNode.right);
+                    }
+                    _rotateLeft(currentNode.nodeId);
+                }
+
+                if ((-1 <= balanceFactor) && (balanceFactor <= 1)) {
+                    _updateNodeHeight(currentNode.nodeId);
+                }
+
+                if (currentNode.parent == 0x0) {
+                    // Reached the root which may be new due to tree
+                    // rotation, so set it as the root and then break.
+                    break;
+                }
+
+                currentNode = node_lookup[currentNode.parent];
+            }
         }
 
         function _getBalanceFactor(bytes32 nodeId) internal returns (int) {
