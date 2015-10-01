@@ -165,7 +165,14 @@ natively.
         function query(bytes32 indexId, bytes2 operator, int value) public returns (bytes32);
     }
 
+Contract ABI
+------------
 
+The contract can be accessed via web3.js with
+
+.. code-block:: javascript
+
+    var Gove = web3.eth.contract([{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeLeftChild","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"},{"name":"id","type":"bytes32"}],"name":"getNodeId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeValue","outputs":[{"name":"","type":"int256"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeRightChild","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"indexName","type":"bytes32"},{"name":"id","type":"bytes32"},{"name":"value","type":"int256"}],"name":"insert","outputs":[],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeParent","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"}],"name":"getIndexName","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeIndexId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeHeight","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"}],"name":"getIndexRoot","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"indexName","type":"bytes32"}],"name":"getIndexId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"indexId","type":"bytes32"},{"name":"operator","type":"bytes2"},{"name":"value","type":"int256"}],"name":"query","outputs":[{"name":"","type":"bytes32"}],"type":"function"}]).at(0x6b07cb54be50bc040cca0360ec792d7b5609f4db);
 
 Indices and tables
 ==================
