@@ -76,6 +76,45 @@ contract Grove {
             return node_lookup[nodeId].right;
         }
 
+        function getNextNode(bytes32 nodeId) constant returns (bytes32) {
+            var currentNode = node_lookup[nodeId];
+            Node child;
+
+            if (currentNode.right != 0x0) {
+                // Trace right to earliest child in right tree.
+                child = node_lookup[currentNode.right];
+
+                while (child.left != 0) {
+                    child = node_lookup[child.left];
+                }
+                return child.nodeId;
+            }
+
+            if (currentNode.parent != 0x0) {
+                // if the node is the left child of it's parent, then the
+                // parent is the next one.
+                var parent = node_lookup[currentNode.parent];
+                child = currentNode;
+
+                while (true) {
+                    if (parent.left == child.nodeId) {
+                        return parent.nodeId;
+                    }
+
+                    if (parent.parent == 0x0) {
+                        break;
+                    }
+                    child = parent;
+                    parent = node_lookup[parent.parent];
+                }
+
+                // Now we need to trace all the way up checking to see if any parent is the 
+            }
+
+            // This is the final node.
+            return 0x0;
+        }
+
         function insert(bytes32 indexName, bytes32 id, int value) public {
                 bytes32 indexId = getIndexId(msg.sender, indexName);
                 if (index_lookup[indexId] == 0x0) {
