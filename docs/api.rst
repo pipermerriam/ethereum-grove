@@ -15,6 +15,7 @@ has an id which can be computed as ``sha3(ownerAddress, indexName)``.
 You can also use the ``getIndexId(address ownerAddress, bytes32 indexName)``
 function to compute this for you.
 
+
 Nodes
 -----
 
@@ -40,8 +41,9 @@ Grove, you must be able to provide a unique identifier for that data element,
 as well as an integer value that can be used to order the data element with
 respect to the other elements.
 
-Node API
-^^^^^^^^
+
+Node Properties
+^^^^^^^^^^^^^^^
 
 * **function getIndexName(bytes32 indexId) constant returns (bytes32)**
 
@@ -79,6 +81,21 @@ Node API
 
   Returns the right child of the node.
 
+
+Tree Traversal
+^^^^^^^^^^^^^^
+
+* **function getNextNode(bytes32 nodeId) constant returns (bytes32)**
+
+  Returns the node ID for the next sequential node in the index.  Returns 0x0
+  if there is not next node.
+
+* **function getPreviousNode(bytes32 nodeId) constant returns (bytes32)**
+
+  Returns the node ID for the previous sequential node in the index.  Returns
+  0x0 if there is no previous node.
+
+
 Insertion
 ^^^^^^^^^
 
@@ -91,6 +108,28 @@ You can use the ``insert`` function insert a new piece of data into the index.
 * **id:** The unique identifier for this data.
 * **value (int):** The value that can be used to order this node with respect
   to the other nodes.
+
+.. note::
+
+    If a node with the given **id** is already present in the index, then the 
+
+
+Removal (deletion)
+^^^^^^^^^^^^^^^^^^
+
+**function remove(bytes32 indexName, bytes32 id) public**
+
+You can use the ``remove`` function to remove an **id** from the index.
+
+
+Existence
+^^^^^^^^^
+
+**function exists(bytes32 indexId, bytes32 id) public returns (bool)**
+
+You can use the ``exists`` function to query whether an **id** is present
+within a given index.
+
 
 Querying
 ^^^^^^^^
@@ -143,10 +182,18 @@ natively.
         function getNodeRightChild(bytes32 nodeId) constant returns (bytes32);
 
         /*
+         *  Traversal
+         */
+        function getNextNode(bytes32 nodeId) constant returns (bytes32);
+        function getPreviousNode(bytes32 nodeId) constant returns (bytes32);
+
+        /*
          *  Insert and Query API
          */
         function insert(bytes32 indexName, bytes32 id, int value) public;
         function query(bytes32 indexId, bytes2 operator, int value) public returns (bytes32);
+        function exists(bytes32 indexId, bytes32 id) constant returns (bool);
+        function remove(bytes32 indexName, bytes32 id) public;
     }
 
 Contract ABI
@@ -156,4 +203,4 @@ The contract can be accessed via web3.js with
 
 .. code-block:: javascript
 
-    var Gove = web3.eth.contract([{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeLeftChild","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"},{"name":"id","type":"bytes32"}],"name":"getNodeId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeValue","outputs":[{"name":"","type":"int256"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeRightChild","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"indexName","type":"bytes32"},{"name":"id","type":"bytes32"},{"name":"value","type":"int256"}],"name":"insert","outputs":[],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeParent","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"}],"name":"getIndexName","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeIndexId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeHeight","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"}],"name":"getIndexRoot","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"indexName","type":"bytes32"}],"name":"getIndexId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"indexId","type":"bytes32"},{"name":"operator","type":"bytes2"},{"name":"value","type":"int256"}],"name":"query","outputs":[{"name":"","type":"bytes32"}],"type":"function"}]).at(0x6b07cb54be50bc040cca0360ec792d7b5609f4db);
+    var Grove = web3.eth.contract([{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeLeftChild","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getPreviousNode","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"},{"name":"id","type":"bytes32"}],"name":"getNodeId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeValue","outputs":[{"name":"","type":"int256"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeRightChild","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"},{"name":"id","type":"bytes32"}],"name":"exists","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":false,"inputs":[{"name":"indexName","type":"bytes32"},{"name":"id","type":"bytes32"},{"name":"value","type":"int256"}],"name":"insert","outputs":[],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeParent","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"}],"name":"getIndexName","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeIndexId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNextNode","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"indexName","type":"bytes32"},{"name":"id","type":"bytes32"}],"name":"remove","outputs":[],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeHeight","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"nodeId","type":"bytes32"}],"name":"getNodeId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"indexId","type":"bytes32"}],"name":"getIndexRoot","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":true,"inputs":[{"name":"owner","type":"address"},{"name":"indexName","type":"bytes32"}],"name":"getIndexId","outputs":[{"name":"","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"indexId","type":"bytes32"},{"name":"operator","type":"bytes2"},{"name":"value","type":"int256"}],"name":"query","outputs":[{"name":"","type":"bytes32"}],"type":"function"}]).at(0x7d7ce4e2cdfea812b33f48f419860b91cf9a141d);

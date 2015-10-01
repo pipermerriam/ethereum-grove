@@ -19,8 +19,16 @@ contract GroveAPI {
         function getNodeRightChild(bytes32 nodeId) constant returns (bytes32);
 
         /*
+         *  Traversal
+         */
+        function getNextNode(bytes32 nodeId) constant returns (bytes32);
+        function getPreviousNode(bytes32 nodeId) constant returns (bytes32);
+
+        /*
          *  Insert and Query API
          */
         function insert(bytes32 indexName, bytes32 id, int value) public;
         function query(bytes32 indexId, bytes2 operator, int value) public returns (bytes32);
+        function exists(bytes32 indexId, bytes32 id) constant returns (bool);
+        function remove(bytes32 indexName, bytes32 id) public;
 }

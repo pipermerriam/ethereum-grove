@@ -172,12 +172,14 @@ contract Grove {
                 }
                 bytes32 nodeId = getNodeId(indexId, id);
 
-                if (node_lookup[nodeId].id == id) {
-                    // A node with this id already exists.
-                    //
-                    // TODO: When deletion is supported, we can delete the
-                    // current node and then re-insert it.
-                    return;
+                if (node_lookup[nodeId].nodeId == nodeId) {
+                    // A node with this id already exists.  If the value is
+                    // the same, then just return early, otherwise, remove it
+                    // and reinsert it.
+                    if (node_lookup[nodeId].value == value) {
+                        return;
+                    }
+                    remove(indexName, id);
                 }
 
                 int balanceFactor;
