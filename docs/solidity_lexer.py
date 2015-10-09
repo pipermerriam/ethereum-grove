@@ -15,6 +15,5 @@ class SolidityLexer(CFamilyLexer):
     tokens = {
         'address': [
             (r'address', Keyword.Type),
-            #(words(('address',)), Keyword.Type),
         ]
     }

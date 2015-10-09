@@ -95,7 +95,7 @@ def test_tree_querying(big_tree, operator, value, expected):
             return None
         return big_tree.getNodeValue.call(node_id)
 
-    index_id = big_tree.getIndexId(big_tree._meta.rpc_client.get_coinbase(), "test")
+    index_id = big_tree.computeIndexId(big_tree._meta.rpc_client.get_coinbase(), "test")
 
     node_id = big_tree.query.call(index_id, operator, value)
 
