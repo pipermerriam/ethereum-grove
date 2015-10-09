@@ -76,9 +76,9 @@ def test_getting_next_node(big_tree, _id, next_id):
             return None
         return big_tree.getNodeValue.call(node_id)
 
-    index_id = big_tree.getIndexId(big_tree._meta.rpc_client.get_coinbase(), "test")
+    index_id = big_tree.computeIndexId(big_tree._meta.rpc_client.get_coinbase(), "test")
 
-    node_id = big_tree.getNodeId(index_id, _id)
+    node_id = big_tree.computeNodeId(index_id, _id)
     next_node_id = big_tree.getNextNode.call(node_id)
     if next_id is None:
         assert next_node_id is None
@@ -125,9 +125,9 @@ def test_getting_previous_node(big_tree, _id, previous_id):
             return None
         return big_tree.getNodeValue.call(node_id)
 
-    index_id = big_tree.getIndexId(big_tree._meta.rpc_client.get_coinbase(), "test")
+    index_id = big_tree.computeIndexId(big_tree._meta.rpc_client.get_coinbase(), "test")
 
-    node_id = big_tree.getNodeId(index_id, _id)
+    node_id = big_tree.computeNodeId(index_id, _id)
     previous_node_id = big_tree.getPreviousNode.call(node_id)
     if previous_id is None:
         assert previous_node_id is None

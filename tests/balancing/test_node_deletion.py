@@ -152,10 +152,10 @@ def test_removing_nodes(deployed_contracts, ids_to_remove, expected_states):
             return None
         return grove.getNodeId.call(node_id)
 
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), index_name)
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), index_name)
 
     for _id in ids_to_remove:
-        node_id = grove.getNodeId(index_id, _id)
+        node_id = grove.computeNodeId(index_id, _id)
         assert grove.exists(index_id, _id) is True
         grove.remove(index_name, _id)
         assert grove.exists(index_id, _id) is False
@@ -163,7 +163,7 @@ def test_removing_nodes(deployed_contracts, ids_to_remove, expected_states):
     actual_states = set()
 
     for _id, _, _, _, _, _ in expected_states:
-        node_id = grove.getNodeId(index_id, _id)
+        node_id = grove.computeNodeId(index_id, _id)
         value = grove.getNodeValue(node_id)
         parent = get_id(grove.getNodeParent(node_id))
         left = get_id(grove.getNodeLeftChild(node_id))
@@ -179,14 +179,14 @@ def test_deleting_sets_new_root(deployed_contracts):
     grove = deployed_contracts.Grove
 
     index_name = "test-root_deletion"
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), index_name)
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), index_name)
 
     grove.insert(index_name, 'a', 2)
     grove.insert(index_name, 'b', 1)
     grove.insert(index_name, 'c', 3)
 
-    node_a_id = grove.getNodeId(index_id, 'a')
-    node_b_id = grove.getNodeId(index_id, 'b')
+    node_a_id = grove.computeNodeId(index_id, 'a')
+    node_b_id = grove.computeNodeId(index_id, 'b')
 
     assert grove.getIndexRoot(index_id) == node_a_id
 

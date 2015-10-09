@@ -33,7 +33,7 @@ tree_nodes = (
 
 def test_exists_query(deployed_contracts):
     grove = deployed_contracts.Grove
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), "test")
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test")
 
     for _id, value in tree_nodes:
         assert grove.exists(index_id, _id) is False
@@ -53,7 +53,7 @@ def test_exists_query(deployed_contracts):
 
 def test_exists_query_special_case(deployed_contracts):
     grove = deployed_contracts.Grove
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), "test")
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test")
 
     grove.insert('test', 'key', 1234)
 

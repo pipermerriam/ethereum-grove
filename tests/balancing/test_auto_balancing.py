@@ -1,10 +1,10 @@
 def test_single_node_tree(deployed_contracts):
     grove = deployed_contracts.Grove
 
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), "test-a")
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test-a")
 
     grove.insert('test-a', 'a', 20)
-    node_id = grove.getNodeId(index_id, 'a')
+    node_id = grove.computeNodeId(index_id, 'a')
 
     assert grove.getNodeId(node_id) == 'a'
     assert grove.getNodeParent(node_id) is None
@@ -22,13 +22,13 @@ def test_two_node_tree(deployed_contracts):
             return None
         return grove.getNodeId.call(node_id)
 
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), "test-b")
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test-b")
 
     grove.insert('test-b', 'a', 20)
-    node_a_id = grove.getNodeId(index_id, 'a')
+    node_a_id = grove.computeNodeId(index_id, 'a')
 
     grove.insert('test-b', 'b', 25)
-    node_b_id = grove.getNodeId(index_id, 'b')
+    node_b_id = grove.computeNodeId(index_id, 'b')
 
     root = get_id(grove.getIndexRoot.call(index_id))
     assert root == 'a'
@@ -73,7 +73,7 @@ def test_right_heavy_three_node_tree(deployed_contracts):
     for id, node_value in values_a:
         grove.insert('test-c', id, node_value)
 
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), "test-c")
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test-c")
 
     root = get_id(grove.getIndexRoot.call(index_id))
     assert root == 'b'
@@ -81,7 +81,7 @@ def test_right_heavy_three_node_tree(deployed_contracts):
     actual = set()
 
     for id, _ in values_a:
-        node_id = grove.getNodeId.call(index_id, id)
+        node_id = grove.computeNodeId.call(index_id, id)
         value = grove.getNodeValue.call(node_id)
         _parent = grove.getNodeParent.call(node_id)
         parent = get_id(_parent)
@@ -121,7 +121,7 @@ def test_left_heavy_three_node_tree(deployed_contracts):
     for id, node_value in values_b:
         grove.insert('test-d', id, node_value)
 
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), "test-d")
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test-d")
 
     root = get_id(grove.getIndexRoot.call(index_id))
     assert root == 'b'
@@ -129,7 +129,7 @@ def test_left_heavy_three_node_tree(deployed_contracts):
     actual = set()
 
     for id, _ in values_b:
-        node_id = grove.getNodeId.call(index_id, id)
+        node_id = grove.computeNodeId.call(index_id, id)
         value = grove.getNodeValue.call(node_id)
         _parent = grove.getNodeParent.call(node_id)
         parent = get_id(_parent)
@@ -177,7 +177,7 @@ def test_right_heavy_six_node_tree(deployed_contracts):
     for id, node_value in values_c:
         grove.insert('test-e', id, node_value)
 
-    index_id = grove.getIndexId(grove._meta.rpc_client.get_coinbase(), "test-e")
+    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test-e")
 
     root = get_id(grove.getIndexRoot.call(index_id))
     assert root == 'c'
@@ -185,7 +185,7 @@ def test_right_heavy_six_node_tree(deployed_contracts):
     actual = set()
 
     for id, _ in values_c:
-        node_id = grove.getNodeId.call(index_id, id)
+        node_id = grove.computeNodeId.call(index_id, id)
         value = grove.getNodeValue.call(node_id)
         _parent = grove.getNodeParent.call(node_id)
         parent = get_id(_parent)

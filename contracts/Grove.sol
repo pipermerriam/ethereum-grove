@@ -22,11 +22,11 @@ library GroveLib {
                 uint height;
         }
 
-        function getIndexId(address owner, bytes32 indexName) constant returns (bytes32) {
+        function computeIndexId(address owner, bytes32 indexName) constant returns (bytes32) {
                 return sha3(owner, indexName);
         }
 
-        function getNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
+        function computeNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
                 return sha3(indexId, id);
         }
 
@@ -40,43 +40,43 @@ library GroveLib {
         /*
          *  Node getters
          */
-        function getNodeId(Index index, bytes32 nodeId) constant returns (bytes32) {
+        function getNodeId(Index storage index, bytes32 nodeId) constant returns (bytes32) {
             return index.nodes[nodeId].id;
         }
 
-        function getNodeIndexId(Index index, bytes32 nodeId) constant returns (bytes32) {
+        function getNodeIndexId(Index storage index, bytes32 nodeId) constant returns (bytes32) {
             return index.nodes[nodeId].indexId;
         }
 
-        function getNodeValue(Index index, bytes32 nodeId) constant returns (int) {
+        function getNodeValue(Index storage index, bytes32 nodeId) constant returns (int) {
             return index.nodes[nodeId].value;
         }
 
-        function getNodeHeight(Index index, bytes32 nodeId) constant returns (uint) {
+        function getNodeHeight(Index storage index, bytes32 nodeId) constant returns (uint) {
             return index.nodes[nodeId].height;
         }
 
-        function getNodeParent(Index index, bytes32 nodeId) constant returns (bytes32) {
+        function getNodeParent(Index storage index, bytes32 nodeId) constant returns (bytes32) {
             return index.nodes[nodeId].parent;
         }
 
-        function getNodeLeftChild(Index index, bytes32 nodeId) constant returns (bytes32) {
+        function getNodeLeftChild(Index storage index, bytes32 nodeId) constant returns (bytes32) {
             return index.nodes[nodeId].left;
         }
 
-        function getNodeRightChild(Index index, bytes32 nodeId) constant returns (bytes32) {
+        function getNodeRightChild(Index storage index, bytes32 nodeId) constant returns (bytes32) {
             return index.nodes[nodeId].right;
         }
 
-        function getPreviousNode(Index index, bytes32 nodeId) constant returns (bytes32) {
-            var currentNode = index.nodes[nodeId];
+        function getPreviousNode(Index storage index, bytes32 nodeId) constant returns (bytes32) {
+            Node storage currentNode = index.nodes[nodeId];
 
             if (currentNode.nodeId == 0x0) {
                 // Unknown node, just return 0x0;
                 return 0x0;
             }
 
-            Node child;
+            Node memory child;
 
             if (currentNode.left != 0x0) {
                 // Trace left to latest child in left tree.
@@ -92,7 +92,7 @@ library GroveLib {
                 // Now we trace back up through parent relationships, looking
                 // for a link where the child is the right child of it's
                 // parent.
-                var parent = index.nodes[currentNode.parent];
+                Node storage parent = index.nodes[currentNode.parent];
                 child = currentNode;
 
                 while (true) {
@@ -112,15 +112,15 @@ library GroveLib {
             return 0x0;
         }
 
-        function getNextNode(Index index, bytes32 nodeId) constant returns (bytes32) {
-            var currentNode = index.nodes[nodeId];
+        function getNextNode(Index storage index, bytes32 nodeId) constant returns (bytes32) {
+            Node storage currentNode = index.nodes[nodeId];
 
             if (currentNode.nodeId == 0x0) {
                 // Unknown node, just return 0x0;
                 return 0x0;
             }
 
-            Node child;
+            Node memory child;
 
             if (currentNode.right != 0x0) {
                 // Trace right to earliest child in right tree.
@@ -135,7 +135,7 @@ library GroveLib {
             if (currentNode.parent != 0x0) {
                 // if the node is the left child of it's parent, then the
                 // parent is the next one.
-                var parent = index.nodes[currentNode.parent];
+                Node storage parent = index.nodes[currentNode.parent];
                 child = currentNode;
 
                 while (true) {
@@ -157,8 +157,8 @@ library GroveLib {
             return 0x0;
         }
 
-        function insert(Index index, bytes32 id, int value) public {
-                bytes32 nodeId = getNodeId(index.id, id);
+        function insert(Index storage index, bytes32 id, int value) public {
+                bytes32 nodeId = computeNodeId(index.id, id);
 
                 if (index.nodes[nodeId].nodeId == nodeId) {
                     // A node with this id already exists.  If the value is
@@ -181,7 +181,7 @@ library GroveLib {
                     rootNodeId = nodeId;
                     index.root = nodeId;
                 }
-                var currentNode = index.nodes[rootNodeId];
+                Node storage currentNode = index.nodes[rootNodeId];
 
                 // Do insertion
                 while (true) {
@@ -218,20 +218,20 @@ library GroveLib {
                 _rebalanceTree(index, currentNode.nodeId);
         }
 
-        function exists(Index index, bytes32 id) constant returns (bool) {
-            bytes32 nodeId = getNodeId(index.id, id);
+        function exists(Index storage index, bytes32 id) constant returns (bool) {
+            bytes32 nodeId = computeNodeId(index.id, id);
             return (index.nodes[nodeId].nodeId == nodeId);
         }
 
-        function remove(Index index, bytes32 id) public {
-            bytes32 nodeId = getNodeId(index.id, id);
+        function remove(Index storage index, bytes32 id) public {
+            bytes32 nodeId = computeNodeId(index.id, id);
             
-            Node replacementNode;
-            Node parent;
-            Node child;
+            Node storage replacementNode;
+            Node storage parent;
+            Node storage child;
             bytes32 rebalanceOrigin;
 
-            var nodeToDelete = index.nodes[nodeId];
+            Node storage nodeToDelete = index.nodes[nodeId];
 
             if (nodeToDelete.id != id) {
                 // The id does not exist in the tree.
@@ -369,8 +369,8 @@ library GroveLib {
             throw;
         }
 
-        function _getMaximum(Index index, bytes32 nodeId) internal returns (int) {
-                var currentNode = index.nodes[nodeId];
+        function _getMaximum(Index storage index, bytes32 nodeId) internal returns (int) {
+                Node storage currentNode = index.nodes[nodeId];
 
                 while (true) {
                     if (currentNode.right == 0x0) {
@@ -380,8 +380,8 @@ library GroveLib {
                 }
         }
 
-        function _getMinimum(Index index, bytes32 nodeId) internal returns (int) {
-                var currentNode = index.nodes[nodeId];
+        function _getMinimum(Index storage index, bytes32 nodeId) internal returns (int) {
+                Node storage currentNode = index.nodes[nodeId];
 
                 while (true) {
                     if (currentNode.left == 0x0) {
@@ -391,7 +391,7 @@ library GroveLib {
                 }
         }
 
-        function query(Index index, bytes2 operator, int value) public returns (bytes32) {
+        function query(Index storage index, bytes2 operator, int value) public returns (bytes32) {
                 bytes32 rootNodeId = index.root;
                 
                 if (rootNodeId == 0x0) {
@@ -399,7 +399,7 @@ library GroveLib {
                     return 0x0;
                 }
 
-                var currentNode = index.nodes[rootNodeId];
+                Node storage currentNode = index.nodes[rootNodeId];
 
                 while (true) {
                     if (_compare(currentNode.value, operator, value)) {
@@ -474,10 +474,10 @@ library GroveLib {
                 }
         }
 
-        function _rebalanceTree(Index index, bytes32 nodeId) internal {
+        function _rebalanceTree(Index storage index, bytes32 nodeId) internal {
             // Trace back up rebalancing the tree and updating heights as
             // needed..
-            var currentNode = index.nodes[nodeId];
+            Node storage currentNode = index.nodes[nodeId];
 
             while (true) {
                 int balanceFactor = _getBalanceFactor(index, currentNode.nodeId);
@@ -518,20 +518,20 @@ library GroveLib {
             }
         }
 
-        function _getBalanceFactor(Index index, bytes32 nodeId) internal returns (int) {
-                var node = index.nodes[nodeId];
+        function _getBalanceFactor(Index storage index, bytes32 nodeId) internal returns (int) {
+                Node storage node = index.nodes[nodeId];
 
                 return int(index.nodes[node.left].height) - int(index.nodes[node.right].height);
         }
 
-        function _updateNodeHeight(Index index, bytes32 nodeId) internal {
-                var node = index.nodes[nodeId];
+        function _updateNodeHeight(Index storage index, bytes32 nodeId) internal {
+                Node storage node = index.nodes[nodeId];
 
                 node.height = max(index.nodes[node.left].height, index.nodes[node.right].height) + 1;
         }
 
-        function _rotateLeft(Index index, bytes32 nodeId) internal {
-            var originalRoot = index.nodes[nodeId];
+        function _rotateLeft(Index storage index, bytes32 nodeId) internal {
+            Node storage originalRoot = index.nodes[nodeId];
 
             if (originalRoot.right == 0x0) {
                 // Cannot rotate left if there is no right originalRoot to rotate into
@@ -541,7 +541,7 @@ library GroveLib {
 
             // The right child is the new root, so it gets the original
             // `originalRoot.parent` as it's parent.
-            var newRoot = index.nodes[originalRoot.right];
+            Node storage newRoot = index.nodes[originalRoot.right];
             newRoot.parent = originalRoot.parent;
 
             // The original root needs to have it's right child nulled out.
@@ -550,7 +550,7 @@ library GroveLib {
             if (originalRoot.parent != 0x0) {
                 // If there is a parent node, it needs to now point downward at
                 // the newRoot which is rotating into the place where `node` was.
-                var parent = index.nodes[originalRoot.parent];
+                Node storage parent = index.nodes[originalRoot.parent];
 
                 // figure out if we're a left or right child and have the
                 // parent point to the new node.
@@ -566,7 +566,7 @@ library GroveLib {
             if (newRoot.left != 0) {
                 // If the new root had a left child, that moves to be the
                 // new right child of the original root node
-                var leftChild = index.nodes[newRoot.left];
+                Node storage leftChild = index.nodes[newRoot.left];
                 originalRoot.right = leftChild.nodeId;
                 leftChild.parent = originalRoot.nodeId;
             }
@@ -584,8 +584,8 @@ library GroveLib {
             _updateNodeHeight(index, newRoot.nodeId);
         }
 
-        function _rotateRight(Index index, bytes32 nodeId) internal {
-            var originalRoot = index.nodes[nodeId];
+        function _rotateRight(Index storage index, bytes32 nodeId) internal {
+            Node storage originalRoot = index.nodes[nodeId];
 
             if (originalRoot.left == 0x0) {
                 // Cannot rotate right if there is no left node to rotate into
@@ -595,7 +595,7 @@ library GroveLib {
 
             // The left child is taking the place of node, so we update it's
             // parent to be the original parent of the node.
-            var newRoot = index.nodes[originalRoot.left];
+            Node storage newRoot = index.nodes[originalRoot.left];
             newRoot.parent = originalRoot.parent;
 
             // Null out the originalRoot.left
@@ -604,7 +604,7 @@ library GroveLib {
             if (originalRoot.parent != 0x0) {
                 // If the node has a parent, update the correct child to point
                 // at the newRoot now.
-                var parent = index.nodes[originalRoot.parent];
+                Node storage parent = index.nodes[originalRoot.parent];
 
                 if (parent.left == originalRoot.nodeId) {
                     parent.left = newRoot.nodeId;
@@ -615,7 +615,7 @@ library GroveLib {
             }
 
             if (newRoot.right != 0x0) {
-                var rightChild = index.nodes[newRoot.right];
+                Node storage rightChild = index.nodes[newRoot.right];
                 originalRoot.left = newRoot.right;
                 rightChild.parent = originalRoot.nodeId;
             }
@@ -646,18 +646,21 @@ contract Grove {
         // Map index_id to index
         mapping (bytes32 => GroveLib.Index) index_lookup;
 
+        // Map node_id to index_id.
+        mapping (bytes32 => bytes32) node_to_index;
+
         // @notice Computes the id for a Grove index which is sha3(owner, indexName)
         // @param owner The address of the index owner.
         // @param indexName The name of the index.
-        function getIndexId(address owner, bytes32 indexName) constant returns (bytes32) {
-                return GroveLib.getIndexId(owner, indexName);
+        function computeIndexId(address owner, bytes32 indexName) constant returns (bytes32) {
+                return GroveLib.computeIndexId(owner, indexName);
         }
 
         // @notice Computes the id for a node in a given Grove index which is sha3(indexId, id)
         // @param indexId The id for the index the node belongs to.
         // @param id The unique identifier for the data this node represents.
-        function getNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
-                return GroveLib.getNodeId(indexId, id);
+        function computeNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
+                return GroveLib.computeNodeId(indexId, id);
         }
 
         /*
@@ -675,49 +678,54 @@ contract Grove {
             return index_lookup[indexId].root;
         }
 
-        function getNodeId(bytes32 indexId, bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeId(index_lookup[indexId], nodeId);
+        function getNodeId(bytes32 nodeId) constant returns (bytes32) {
+            return GroveLib.getNodeId(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
-        function getNodeIndexId(bytes32 indexId, bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeIndexId(index_lookup[indexId], nodeId);
+        function getNodeIndexId(bytes32 nodeId) constant returns (bytes32) {
+            return GroveLib.getNodeIndexId(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
-        function getNodeValue(bytes32 indexId, bytes32 nodeId) constant returns (int) {
-            return GroveLib.getNodeValue(index_lookup[indexId], nodeId);
+        function getNodeValue(bytes32 nodeId) constant returns (int) {
+            return GroveLib.getNodeValue(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
-        function getNodeHeight(bytes32 indexId, bytes32 nodeId) constant returns (uint) {
-            return GroveLib.getNodeHeight(index_lookup[indexId], nodeId);
+        function getNodeHeight(bytes32 nodeId) constant returns (uint) {
+            return GroveLib.getNodeHeight(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
-        function getNodeParent(bytes32 indexId, bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeParent(index_lookup[indexId], nodeId);
+        function getNodeParent(bytes32 nodeId) constant returns (bytes32) {
+            return GroveLib.getNodeParent(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
-        function getNodeLeftChild(bytes32 indexId, bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeLeftChild(index_lookup[indexId], nodeId);
+        function getNodeLeftChild(bytes32 nodeId) constant returns (bytes32) {
+            return GroveLib.getNodeLeftChild(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
-        function getNodeRightChild(bytes32 indexId, bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeRightChild(index_lookup[indexId], nodeId);
+        function getNodeRightChild(bytes32 nodeId) constant returns (bytes32) {
+            return GroveLib.getNodeRightChild(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
-        function getPreviousNode(bytes32 indexId, bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getPreviousNode(index_lookup[indexId], nodeId);
+        function getPreviousNode(bytes32 nodeId) constant returns (bytes32) {
+            return GroveLib.getPreviousNode(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
-        function getNextNode(bytes32 indexId, bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNextNode(index_lookup[indexId], nodeId);
+        function getNextNode(bytes32 nodeId) constant returns (bytes32) {
+            return GroveLib.getNextNode(index_lookup[node_to_index[nodeId]], nodeId);
         }
 
         function insert(bytes32 indexName, bytes32 id, int value) public {
-                bytes32 indexId = getIndexId(msg.sender, indexName);
+                bytes32 indexId = computeIndexId(msg.sender, indexName);
                 var index = index_lookup[indexId];
+
                 if (index.name != indexName) {
+                        // If this is a new index, store it's name and id
                         index.name = indexName;
                         index.id = indexId;
                 }
+
+                // Store the mapping from nodeId to the indexId
+                node_to_index[computeNodeId(indexId, id)] = indexId;
 
                 GroveLib.insert(index, id, value);
         }
@@ -727,7 +735,7 @@ contract Grove {
         }
 
         function remove(bytes32 indexName, bytes32 id) public {
-            return GroveLib.remove(index_lookup[getIndexId(msg.sender, indexName)]);
+            GroveLib.remove(index_lookup[computeIndexId(msg.sender, indexName)], id);
         }
 
         function query(bytes32 indexId, bytes2 operator, int value) public returns (bytes32) {
