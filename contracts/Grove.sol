@@ -826,7 +826,7 @@ contract Grove {
         }
 
         /// @dev Remove the index node for the given unique identifier.
-        /// @param indexId The id for the index.
+        /// @param indexName The name of the index.
         /// @param id The unique identifier of the data element.
         function remove(bytes32 indexName, bytes32 id) public {
             GroveLib.remove(index_lookup[computeIndexId(msg.sender, indexName)], id);
