@@ -7,7 +7,7 @@ library GroveLib {
         /*
          *  Indexes for ordered data
          *
-         *  Address: TODO
+         *  Address: 0xd07ce4329b27eb8896c51458468d98a0e4c0394c
          */
         struct Index {
                 bytes32 id;
@@ -700,7 +700,7 @@ contract Grove {
         /*
          *  Indexes for ordered data
          *
-         *  Address: TODO
+         *  Address: 0x8017f24a47c889b1ee80501ff84beb3c017edf0b
          */
         // Map index_id to index
         mapping (bytes32 => GroveLib.Index) index_lookup;
