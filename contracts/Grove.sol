@@ -1,4 +1,5 @@
 // Grove v0.3
+import "libraries/GroveLib.sol";
 
 
 /// @title Grove - queryable indexes for ordered data.
@@ -19,42 +20,29 @@ contract Grove {
         /// @param owner The address of the index owner.
         /// @param indexName The name of the index.
         function computeIndexId(address owner, bytes32 indexName) constant returns (bytes32) {
-                return GroveLib.computeIndexId(owner, indexName);
+                return sha3(owner, indexName);
         }
 
         /// @notice Computes the id for a node in a given Grove index which is sha3(indexId, id)
         /// @param indexId The id for the index the node belongs to.
         /// @param id The unique identifier for the data this node represents.
         function computeNodeId(bytes32 indexId, bytes32 id) constant returns (bytes32) {
-                return GroveLib.computeNodeId(indexId, id);
+                return sha3(indexId, id);
         }
 
         /*
          *  Node getters
          */
-        /// @notice Retrieves the name of an index.
-        /// @param indexId The id of the index.
-        function getIndexName(bytes32 indexId) constant returns (bytes32) {
-            return index_lookup[indexId].name;
-        }
-
         /// @notice Retrieves the id of the root node for this index.
         /// @param indexId The id of the index.
         function getIndexRoot(bytes32 indexId) constant returns (bytes32) {
             return index_lookup[indexId].root;
         }
 
-
-        /// @dev Retrieve the unique identifier this node represents.
-        /// @param nodeId The id for the node
-        function getNodeId(bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeId(index_lookup[node_to_index[nodeId]], nodeId);
-        }
-
         /// @dev Retrieve the index id for the node.
         /// @param nodeId The id for the node
         function getNodeIndexId(bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeIndexId(index_lookup[node_to_index[nodeId]], nodeId);
+            return node_to_index[nodeId];
         }
 
         /// @dev Retrieve the value of the node.
@@ -112,12 +100,6 @@ contract Grove {
         function insert(bytes32 indexName, bytes32 id, int value) public {
                 bytes32 indexId = computeIndexId(msg.sender, indexName);
                 var index = index_lookup[indexId];
-
-                if (index.name != indexName) {
-                        // If this is a new index, store it's name and id
-                        index.name = indexName;
-                        index.id = indexId;
-                }
 
                 // Store the mapping from nodeId to the indexId
                 node_to_index[computeNodeId(indexId, id)] = indexId;
