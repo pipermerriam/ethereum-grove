@@ -1,4 +1,4 @@
-// GroveLib v0.3
+// Grove v0.2
 
 
 /// @title GroveLib - Library for queriable indexed ordered data.
@@ -7,7 +7,7 @@ library GroveLib {
         /*
          *  Indexes for ordered data
          *
-         *  Address: 0xd07ce4329b27eb8896c51458468d98a0e4c0394c
+         *  Address: 0xce642b6a82e72147ceade0e72c786ba8eaeb31d7
          */
         struct Index {
                 bytes32 root;
@@ -33,6 +33,13 @@ library GroveLib {
         /*
          *  Node getters
          */
+        /// @dev Retrieve the unique identifier for the node.
+        /// @param index The index that the node is part of.
+        /// @param id The id for the node to be looked up.
+        function getNodeId(Index storage index, bytes32 id) constant returns (bytes32) {
+            return index.nodes[id].id;
+        }
+
         /// @dev Retrieve the value for the node.
         /// @param index The index that the node is part of.
         /// @param id The id for the node to be looked up.
@@ -184,13 +191,10 @@ library GroveLib {
 
                 bytes32 previousNodeId = 0x0;
 
-                bytes32 rootNodeId = index.root;
-
-                if (rootNodeId == 0x0) {
-                    rootNodeId = id;
+                if (index.root == 0x0) {
                     index.root = id;
                 }
-                Node storage currentNode = index.nodes[rootNodeId];
+                Node storage currentNode = index.nodes[index.root];
 
                 // Do insertion
                 while (true) {
@@ -299,8 +303,8 @@ library GroveLib {
                     }
                 }
                 else {
-                    // If the node we are deleting is the root node so update
-                    // the index root
+                    // If the node we are deleting is the root node update the
+                    // index root node pointer.
                     index.root = replacementNode.id;
                 }
 
