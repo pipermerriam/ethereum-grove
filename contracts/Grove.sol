@@ -15,6 +15,7 @@ contract Grove {
 
         // Map node_id to index_id.
         mapping (bytes32 => bytes32) node_to_index;
+        mapping (bytes32 => bytes32) node_id_lookup;
 
         /// @notice Computes the id for a Grove index which is sha3(owner, indexName)
         /// @param owner The address of the index owner.
@@ -48,31 +49,31 @@ contract Grove {
         /// @dev Retrieve the value of the node.
         /// @param nodeId The id for the node
         function getNodeValue(bytes32 nodeId) constant returns (int) {
-            return GroveLib.getNodeValue(index_lookup[node_to_index[nodeId]], nodeId);
+            return GroveLib.getNodeValue(index_lookup[node_to_index[nodeId]], node_id_lookup[nodeId]);
         }
 
         /// @dev Retrieve the height of the node.
         /// @param nodeId The id for the node
         function getNodeHeight(bytes32 nodeId) constant returns (uint) {
-            return GroveLib.getNodeHeight(index_lookup[node_to_index[nodeId]], nodeId);
+            return GroveLib.getNodeHeight(index_lookup[node_to_index[nodeId]], node_id_lookup[nodeId]);
         }
 
         /// @dev Retrieve the parent id of the node.
         /// @param nodeId The id for the node
         function getNodeParent(bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeParent(index_lookup[node_to_index[nodeId]], nodeId);
+            return GroveLib.getNodeParent(index_lookup[node_to_index[nodeId]], node_id_lookup[nodeId]);
         }
 
         /// @dev Retrieve the left child id of the node.
         /// @param nodeId The id for the node
         function getNodeLeftChild(bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeLeftChild(index_lookup[node_to_index[nodeId]], nodeId);
+            return GroveLib.getNodeLeftChild(index_lookup[node_to_index[nodeId]], node_id_lookup[nodeId]);
         }
 
         /// @dev Retrieve the right child id of the node.
         /// @param nodeId The id for the node
         function getNodeRightChild(bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNodeRightChild(index_lookup[node_to_index[nodeId]], nodeId);
+            return GroveLib.getNodeRightChild(index_lookup[node_to_index[nodeId]], node_id_lookup[nodeId]);
         }
 
         /** @dev Retrieve the id of the node that comes immediately before this
@@ -80,7 +81,7 @@ contract Grove {
          */
         /// @param nodeId The id for the node
         function getPreviousNode(bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getPreviousNode(index_lookup[node_to_index[nodeId]], nodeId);
+            return GroveLib.getPreviousNode(index_lookup[node_to_index[nodeId]], node_id_lookup[nodeId]);
         }
 
         /** @dev Retrieve the id of the node that comes immediately after this
@@ -88,7 +89,7 @@ contract Grove {
          */
         /// @param nodeId The id for the node
         function getNextNode(bytes32 nodeId) constant returns (bytes32) {
-            return GroveLib.getNextNode(index_lookup[node_to_index[nodeId]], nodeId);
+            return GroveLib.getNextNode(index_lookup[node_to_index[nodeId]], node_id_lookup[nodeId]);
         }
 
         /** @dev Update or Insert a data element represented by the unique
@@ -99,10 +100,12 @@ contract Grove {
         /// @param value The number which represents this data elements total ordering.
         function insert(bytes32 indexName, bytes32 id, int value) public {
                 bytes32 indexId = computeIndexId(msg.sender, indexName);
-                var index = index_lookup[indexId];
+                GroveLib.Index storage index = index_lookup[indexId];
 
+                bytes32 nodeId = computeNodeId(indexId, id);
                 // Store the mapping from nodeId to the indexId
-                node_to_index[computeNodeId(indexId, id)] = indexId;
+                node_to_index[nodeId] = indexId;
+                node_id_lookup[nodeId] = id;
 
                 GroveLib.insert(index, id, value);
         }
@@ -130,7 +133,7 @@ contract Grove {
         /** @param operator One of '>', '>=', '<', '<=', '==' to specify what
          *  type of comparison operator should be used.
          */
-        function query(bytes32 indexId, bytes2 operator, int value) public returns (bytes32) {
+        function query(bytes32 indexId, bytes2 operator, int value) constant returns (bytes32) {
                 return GroveLib.query(index_lookup[indexId], operator, value);
         }
 }

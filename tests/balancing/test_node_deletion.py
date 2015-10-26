@@ -139,7 +139,7 @@ tree_nodes = (
 #    ('t', 1),
 #)
 )
-def test_removing_nodes(deployed_contracts, ids_to_remove, expected_states):
+def test_removing_nodes(deploy_coinbase, deployed_contracts, ids_to_remove, expected_states):
     index_name = "test-{0}".format(''.join(ids_to_remove))
 
     grove = deployed_contracts.Grove
@@ -147,12 +147,7 @@ def test_removing_nodes(deployed_contracts, ids_to_remove, expected_states):
     for _id, value in tree_nodes:
         grove.insert(index_name, _id, value)
 
-    def get_id(node_id):
-        if node_id is None:
-            return None
-        return grove.getNodeId.call(node_id)
-
-    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), index_name)
+    index_id = grove.computeIndexId(deploy_coinbase, index_name)
 
     for _id in ids_to_remove:
         node_id = grove.computeNodeId(index_id, _id)
@@ -165,9 +160,9 @@ def test_removing_nodes(deployed_contracts, ids_to_remove, expected_states):
     for _id, _, _, _, _, _ in expected_states:
         node_id = grove.computeNodeId(index_id, _id)
         value = grove.getNodeValue(node_id)
-        parent = get_id(grove.getNodeParent(node_id))
-        left = get_id(grove.getNodeLeftChild(node_id))
-        right = get_id(grove.getNodeRightChild(node_id))
+        parent = grove.getNodeParent(node_id)
+        left = grove.getNodeLeftChild(node_id)
+        right = grove.getNodeRightChild(node_id)
         height = grove.getNodeHeight(node_id)
 
         actual_states.add((_id, value, parent, left, right, height))
@@ -175,11 +170,11 @@ def test_removing_nodes(deployed_contracts, ids_to_remove, expected_states):
     assert expected_states == actual_states
 
 
-def test_deleting_sets_new_root(deployed_contracts):
+def test_deleting_sets_new_root(deploy_coinbase, deployed_contracts):
     grove = deployed_contracts.Grove
 
     index_name = "test-root_deletion"
-    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), index_name)
+    index_id = grove.computeIndexId(deploy_coinbase, index_name)
 
     grove.insert(index_name, 'a', 2)
     grove.insert(index_name, 'b', 1)
@@ -188,8 +183,8 @@ def test_deleting_sets_new_root(deployed_contracts):
     node_a_id = grove.computeNodeId(index_id, 'a')
     node_b_id = grove.computeNodeId(index_id, 'b')
 
-    assert grove.getIndexRoot(index_id) == node_a_id
+    assert grove.getIndexRoot(index_id) == 'a'
 
     grove.remove(index_name, 'a')
 
-    assert grove.getIndexRoot(index_id) == node_b_id
+    assert grove.getIndexRoot(index_id) == 'b'

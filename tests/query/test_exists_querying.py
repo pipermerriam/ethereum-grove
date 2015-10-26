@@ -31,14 +31,14 @@ tree_nodes = (
 )
 
 
-def test_exists_query(deployed_contracts):
+def test_exists_query(deploy_coinbase, deployed_contracts):
     grove = deployed_contracts.Grove
-    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test")
+    index_id = grove.computeIndexId(deploy_coinbase, "test-a")
 
     for _id, value in tree_nodes:
         assert grove.exists(index_id, _id) is False
 
-        grove.insert('test', _id, value)
+        grove.insert('test-a', _id, value)
 
         assert grove.exists(index_id, _id) is True
 
@@ -51,10 +51,10 @@ def test_exists_query(deployed_contracts):
         assert grove.exists(index_id, _id) is False
 
 
-def test_exists_query_special_case(deployed_contracts):
+def test_exists_query_special_case(deploy_coinbase, deployed_contracts):
     grove = deployed_contracts.Grove
-    index_id = grove.computeIndexId(grove._meta.rpc_client.get_coinbase(), "test")
+    index_id = grove.computeIndexId(deploy_coinbase, "test-b")
 
-    grove.insert('test', 'key', 1234)
+    grove.insert('test-b', 'key', 1234)
 
     assert grove.exists(index_id, '') is False

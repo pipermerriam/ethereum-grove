@@ -35,7 +35,7 @@ def big_tree(deployed_contracts):
     grove = deployed_contracts.Grove
 
     for _id, value in tree_nodes:
-        grove.insert('test', _id, value)
+        grove.insert('test-querying', _id, value)
     return grove
 
 
@@ -89,24 +89,26 @@ def big_tree(deployed_contracts):
         (">=", 19, None),
     )
 )
-def test_tree_querying(big_tree, operator, value, expected):
+def test_tree_querying(deploy_coinbase, big_tree, operator, value, expected):
+    index_id = big_tree.computeIndexId(deploy_coinbase, "test-querying")
+
     def get_val(node_id):
         if node_id is None:
             return None
-        return big_tree.getNodeValue.call(node_id)
+        return big_tree.getNodeValue(big_tree.computeNodeId(index_id, node_id))
 
-    index_id = big_tree.computeIndexId(big_tree._meta.rpc_client.get_coinbase(), "test")
+    _id = big_tree.query(index_id, operator, value)
 
-    node_id = big_tree.query.call(index_id, operator, value)
-
-    if node_id is None:
+    if _id is None:
         assert expected is None
     else:
-        val = big_tree.getNodeValue.call(node_id)
-        parent = get_val(big_tree.getNodeParent.call(node_id))
-        left = get_val(big_tree.getNodeLeftChild.call(node_id))
-        right = get_val(big_tree.getNodeRightChild.call(node_id))
-        height = big_tree.getNodeHeight.call(node_id)
+        node_id = big_tree.computeNodeId(index_id, _id)
+
+        val = big_tree.getNodeValue(node_id)
+        parent = get_val(big_tree.getNodeParent(node_id))
+        left = get_val(big_tree.getNodeLeftChild(node_id))
+        right = get_val(big_tree.getNodeRightChild(node_id))
+        height = big_tree.getNodeHeight(node_id)
 
         actual = (val, parent, left, right, height)
         assert actual == expected
