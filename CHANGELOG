@@ -1,0 +1,5 @@
+0.3.0
+-----
+
+- Get rid of `Index.name` in library representation of an index.
+- Get rid of `Node.nodeId` in library representation of a node.
