@@ -1,4 +1,4 @@
-// Grove v0.2
+// Grove v0.3
 
 
 /// @title GroveLib - Library for queriable indexed ordered data.
