@@ -1,5 +1,7 @@
 # Grove
 
+[![Join the chat at https://gitter.im/pipermerriam/ethereum-grove](https://badges.gitter.im/pipermerriam/ethereum-grove.svg)](https://gitter.im/pipermerriam/ethereum-grove?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Grove provides indexed storage for ordered data such that it can be efficiently
 queried.
 
