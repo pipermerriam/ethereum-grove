@@ -7,7 +7,7 @@ library GroveLib {
         /*
          *  Indexes for ordered data
          *
-         *  Address: 0xce642b6a82e72147ceade0e72c786ba8eaeb31d7
+         *  Address: 0x7c1eb207c07e7ab13cf245585bd03d0fa478d034
          */
         struct Index {
                 bytes32 root;
@@ -655,5 +655,4 @@ library GroveLib {
             _updateNodeHeight(index, originalRoot.id);
             _updateNodeHeight(index, newRoot.id);
         }
-}
 }
